@@ -79,9 +79,10 @@ def surface_features(line,lineno):
 	for term in unigrams_bigrams:
 		if term in vocab_dict:
 			feature_matrix[lineno][vocab_dict[term]] = 1
+		'''
 		if term == aspect:
 			feature_matrix[lineno][vocab_dict[term]] = 2
-	
+		'''
 	#print sentiment
 	if sentiment == 'negative':
 		sentiment_label = 1
@@ -167,15 +168,27 @@ def parse_features_lexical_context(line,lineno):
 	aspect = temp[1].split('!~')[0]
 	unigrams = find_context_unigrams(context_size,sentence,aspect)
 	tagged = nltk.pos_tag(unigrams)
+	previous_features_size = len(vocab_dict)+number_of_lexicon_features
 	for term in tagged:
 		if term[0] in vocab_dict:
 			#print term[1]
-			feature_matrix[lineno][vocab_dict[term[0]]] = pos_tag_index[term[1]]
-
+			feature_matrix[lineno][previous_features_size+vocab_dict[term[0]]] = pos_tag_index[term[1]]
+		'''
+		if term[0] == aspect:
+			print 'hi'
+			feature_matrix[lineno][vocab_dict[term[0]]] = pos_tag_index[term[1]]+100
+		'''
+def aspect_features(line,lineno):
+	temp = line.split('\t')
+	sentence = temp[0]
+	aspect = temp[1].split('!~')[0]
+	previous_features_size = len(vocab_dict)+number_of_lexicon_features
+	if aspect in vocab_dict:
+		feature_matrix[lineno][previous_features_size+vocab_dict[aspect]] = 1
 
 def main():
 	split = sys.argv[1]
-	global vocab_dict,feature_matrix,context_size
+	global vocab_dict,feature_matrix,context_size,number_of_lexicon_features
 	original_data_file = open('../data/train_test_split/Rest_'+split+'.txt','r')
 	train_lines,test_lines,vocab_dict = create_vocabulary()
 	if split=='train':
@@ -184,19 +197,21 @@ def main():
 		num_sentences=test_lines
 	number_of_lexicon_features = 9
 	number_of_parse_features = len(vocab_dict)
-
-	feature_matrix = zeros((num_sentences+1,len(vocab_dict)+number_of_lexicon_features+number_of_parse_features))
+	aspect_features_size = len(vocab_dict)
+	feature_matrix = zeros((num_sentences+1,len(vocab_dict)+number_of_lexicon_features+aspect_features_size))
+	#feature_matrix = zeros((num_sentences+1,len(vocab_dict)+number_of_lexicon_features+number_of_parse_features))
 	#labels_matrix = zeros((1,1))
 	labels_matrix = zeros((num_sentences+1,1))
-	context_size = 7
+	context_size = 5
 	for lineno,line in enumerate(original_data_file):
 		sentiment_label = surface_features(line, lineno)
 		labels_matrix[lineno] = sentiment_label
 		lexicon_features(line,lineno)
+		#aspect_features(line,lineno)
 		#parse_features_lexical_context(line,lineno)
 		
-		#labels_matrix = vstack((labels_matrix, sentiment_label))
-	#print labels_matrix,labels_matrix.shape
+		
+	
 	
 	scipy.io.savemat('../data/features/'+split+'_features.mat', mdict={'data': feature_matrix,'labels':labels_matrix})
 	
