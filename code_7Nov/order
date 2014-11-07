@@ -1,0 +1,11 @@
+python create_input_data.py
+python extract_sents.py
+./run.sh ../data/train_sentences.txt > ../data/train_trees.txt
+python modify_trees.py train
+python modify_trees.py test
+python create_pos_tags_index.py
+python feature_generator.py train
+python feature_generator.py test
+python classifier.py
+python prediction.py
+
